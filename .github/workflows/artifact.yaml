@@ -17,10 +17,19 @@ concurrency:
 
 jobs:
   build:
-    runs-on: macos-15
+    # Newest macOS image: the codebase uses recent SDK symbols (e.g. Wi-Fi 7
+    # CWPHYMode.mode11be, M5 sensors), which the older runner's Xcode lacks.
+    runs-on: macos-26
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: |
+          latest=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1 || true)
+          if [ -n "$latest" ]; then sudo xcode-select -s "$latest/Contents/Developer"; fi
+          xcodebuild -version
+          echo "macOS SDK: $(xcrun --show-sdk-version)"
 
       - name: Archive (unsigned)
         run: |
