@@ -473,6 +473,9 @@ internal class FanView: NSStackView {
     private var syncState: Bool {
         Store.shared.bool(key: "Sensors_fansSync", defaultValue: false)
     }
+    private var smartFanState: Bool {
+        Store.shared.bool(key: "Sensors_smartFan", defaultValue: false)
+    }
     private var speed: Double {
         get {
             if let v = self.fan.customSpeed, self.speedState {
@@ -522,7 +525,8 @@ internal class FanView: NSStackView {
         NotificationCenter.default.addObserver(self, selector: #selector(self.syncFanSpeed), name: .syncFansControl, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.changeHelperState), name: .fanHelperState, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.controlCallback), name: .toggleFanControl, object: nil)
-        
+        NotificationCenter.default.addObserver(self, selector: #selector(self.smartFanCallback), name: .toggleSmartFan, object: nil)
+
         if let fanMode = self.fan.customMode, self.speedState && fanMode != FanMode.automatic {
             SMCHelper.shared.setFanMode(fan.id, mode: fanMode.rawValue)
             self.modeButtons?.setMode(FanMode(rawValue: fanMode.rawValue) ?? .automatic)
@@ -544,8 +548,9 @@ internal class FanView: NSStackView {
         NotificationCenter.default.removeObserver(self, name: .syncFansControl, object: nil)
         NotificationCenter.default.removeObserver(self, name: .fanHelperState, object: nil)
         NotificationCenter.default.removeObserver(self, name: .toggleFanControl, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .toggleSmartFan, object: nil)
     }
-    
+
     override func updateLayer() {
         self.layer?.backgroundColor = (isDarkMode ? NSColor(red: 17/255, green: 17/255, blue: 17/255, alpha: 0.25) : NSColor(red: 245/255, green: 245/255, blue: 245/255, alpha: 1)).cgColor
     }
@@ -915,8 +920,11 @@ internal class FanView: NSStackView {
     
     private func setupControls(_ isInstalled: Bool? = nil) {
         let helperState = isInstalled ?? SMCHelper.shared.isInstalled
-        
-        if !self.controlState {
+
+        // While smart fan control is driving the fans, hide the manual controls so
+        // the user does not fight the automatic loop. The install prompt is still
+        // shown when the helper is missing, since smart control needs it too.
+        if !self.controlState || (helperState && self.smartFanState) {
             self.helperView?.removeFromSuperview()
             self.controlView?.removeFromSuperview()
             self.buttonsView?.removeFromSuperview()
@@ -951,6 +959,10 @@ internal class FanView: NSStackView {
     @objc private func controlCallback(_ notification: Notification) {
         guard let state = notification.userInfo?["state"] as? Bool else { return }
         self.controlState = state
+        self.setupControls()
+    }
+
+    @objc private func smartFanCallback(_ notification: Notification) {
         self.setupControls()
     }
 }

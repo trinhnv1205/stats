@@ -215,6 +215,7 @@ internal class Settings: NSStackView, Settings_v {
     @objc private func toggleSmartFan(_ sender: NSControl) {
         self.smartFanState = controlState(sender)
         Store.shared.set(key: "\(self.title)_smartFan", value: self.smartFanState)
+        NotificationCenter.default.post(name: .toggleSmartFan, object: nil, userInfo: ["state": self.smartFanState])
     }
     @objc private func changeFanProfile(_ sender: NSMenuItem) {
         guard let key = sender.representedObject as? String, let value = FanProfile(rawValue: key) else { return }
