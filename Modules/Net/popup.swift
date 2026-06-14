@@ -444,12 +444,7 @@ internal class Popup: PopupWrapper {
         self.totalUploadField?.stringValue = Units(bytes: value.total.upload).getReadableMemory()
         self.totalDownloadField?.stringValue = Units(bytes: value.total.download).getReadableMemory()
         
-        let form = DateComponentsFormatter()
-        form.maximumUnitCount = 2
-        form.unitsStyle = .full
-        form.allowedUnits = [.day, .hour, .minute]
-        
-        if let duration = form.string(from: self.lastReset, to: Date()) {
+        if let duration = DateComponentsFormatter.durationDayHourMinute.string(from: self.lastReset, to: Date()) {
             self.totalUploadLabel?.toolTip = localizedString("Last reset", duration)
             self.totalDownloadLabel?.toolTip = localizedString("Last reset", duration)
         }

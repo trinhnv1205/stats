@@ -12,6 +12,15 @@
 import Cocoa
 import Kit
 
+// Reused for the "last charge" tooltip so we don't build a DateFormatter on
+// every popup update. Lazily created once; used on the main thread.
+private let batteryLastChargeFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.timeStyle = .short
+    formatter.dateStyle = .medium
+    return formatter
+}()
+
 internal class Popup: PopupWrapper {
     private let dashboardHeight: CGFloat = 160
     private var detailsHeight: CGFloat = (22 * 3) + Constants.Popup.separatorHeight
@@ -311,18 +320,10 @@ internal class Popup: PopupWrapper {
         }
         self.cyclesField?.stringValue = "\(value.cycles)"
         
-        let form = DateComponentsFormatter()
-        form.maximumUnitCount = 2
-        form.unitsStyle = .full
-        form.allowedUnits = [.day, .hour, .minute]
         if let timestamp = value.timeOnACPower {
-            if let duration = form.string(from: timestamp, to: Date()) {
-                let formatter = DateFormatter()
-                formatter.timeStyle = .short
-                formatter.dateStyle = .medium
-                
+            if let duration = DateComponentsFormatter.durationDayHourMinute.string(from: timestamp, to: Date()) {
                 self.lastChargeField?.stringValue = duration
-                self.lastChargeField?.toolTip = formatter.string(from: timestamp)
+                self.lastChargeField?.toolTip = batteryLastChargeFormatter.string(from: timestamp)
             } else {
                 self.lastChargeField?.stringValue = localizedString("Unknown")
                 self.lastChargeField?.toolTip = localizedString("Unknown")
