@@ -1,0 +1,42 @@
+name: build artifact
+
+# Builds an UNSIGNED Stats.app and uploads it as a downloadable artifact.
+# Note: because the build is unsigned, fan control (which installs a privileged
+# SMC helper via SMJobBless) will not work — that requires a code-signed build.
+# The rest of the app runs after clearing quarantine (right click -> Open).
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/adoring-lamport-la04ho
+
+concurrency:
+  group: artifact-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Archive (unsigned)
+        run: |
+          xcodebuild \
+            -scheme Stats \
+            -destination 'platform=macOS' \
+            -configuration Release archive \
+            -archivePath build/Stats.xcarchive \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Zip app
+        run: ditto -c -k --keepParent "build/Stats.xcarchive/Products/Applications/Stats.app" "Stats-unsigned.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Stats-unsigned
+          path: Stats-unsigned.zip
+          if-no-files-found: error
