@@ -248,9 +248,7 @@ public class ProcessReader: Reader<[TopProcess]> {
             .replacingOccurrences(of: pidString, with: "")
             .trimmingCharacters(in: .whitespaces)
         
-        if let regex = try? NSRegularExpression(pattern: " (\\+|\\-)*$", options: .caseInsensitive) {
-            command = regex.stringByReplacingMatches(in: command, options: [], range: NSRange(location: 0, length: command.count), withTemplate: "")
-        }
+        command = command.removedRegexMatches(pattern: " (\\+|\\-)*$")
         
         let pid = Int(pidString.filter("01234567890.".contains)) ?? 0
         var usage = Double(usageString.filter("01234567890.".contains)) ?? 0
