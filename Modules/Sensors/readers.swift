@@ -656,8 +656,7 @@ internal final class FanController: NSObject {
         let fans = sensors.compactMap { $0 as? Fan }.filter { !$0.isComputed && $0.id >= 0 && $0.maxSpeed > $0.minSpeed }
         guard !fans.isEmpty, let temp = self.referenceTemperature(sensors) else { return }
 
-        let window = self.profile.window
-        let ratio = max(0, min(1, (temp - window.min) / (window.max - window.min)))
+        let ratio = FanCurve.ratio(temperature: temp, window: self.profile.window)
 
         for fan in fans {
             if !self.managed.contains(fan.id) {
@@ -666,14 +665,14 @@ internal final class FanController: NSObject {
                 self.smoothed[fan.id] = fan.value
             }
 
-            let target = fan.minSpeed + ratio * (fan.maxSpeed - fan.minSpeed)
+            let target = FanCurve.target(ratio: ratio, minSpeed: fan.minSpeed, maxSpeed: fan.maxSpeed)
             let previous = self.smoothed[fan.id] ?? fan.value
-            let smoothedValue = previous + self.alpha * (target - previous)
+            let smoothedValue = FanCurve.smooth(previous: previous, target: target, alpha: self.alpha)
             self.smoothed[fan.id] = smoothedValue
 
-            let rounded = Int((smoothedValue / Double(self.step)).rounded()) * self.step
-            let deadband = max(self.step, Int((fan.maxSpeed - fan.minSpeed) * self.deadbandFraction))
-            if let last = self.lastApplied[fan.id], abs(rounded - last) < deadband {
+            let rounded = FanCurve.round(smoothedValue, step: self.step)
+            let deadband = FanCurve.deadband(minSpeed: fan.minSpeed, maxSpeed: fan.maxSpeed, fraction: self.deadbandFraction, step: self.step)
+            if !FanCurve.shouldApply(newValue: rounded, lastApplied: self.lastApplied[fan.id], deadband: deadband) {
                 continue
             }
             self.lastApplied[fan.id] = rounded
@@ -713,5 +712,46 @@ internal final class FanController: NSObject {
 
     @objc private func willSleep() {
         self.reset()
+    }
+}
+
+// MARK: - Fan curve math
+
+/// Pure, side-effect-free helpers behind `FanController`. Kept separate from the
+/// SMC/hardware calls so the behaviour (interpolation, smoothing, deadband,
+/// rounding) can be unit-tested in isolation.
+public enum FanCurve {
+    /// Position of `temperature` inside the profile window, clamped to `0...1`.
+    public static func ratio(temperature: Double, window: (min: Double, max: Double)) -> Double {
+        guard window.max > window.min else { return 0 }
+        return max(0, min(1, (temperature - window.min) / (window.max - window.min)))
+    }
+
+    /// Linear interpolation of the target RPM between a fan's min and max speed.
+    public static func target(ratio: Double, minSpeed: Double, maxSpeed: Double) -> Double {
+        minSpeed + ratio * (maxSpeed - minSpeed)
+    }
+
+    /// One exponential-moving-average step from `previous` toward `target`.
+    public static func smooth(previous: Double, target: Double, alpha: Double) -> Double {
+        previous + alpha * (target - previous)
+    }
+
+    /// Round an RPM to the nearest multiple of `step`.
+    public static func round(_ value: Double, step: Int) -> Int {
+        Int((value / Double(step)).rounded()) * step
+    }
+
+    /// Minimum RPM change required before re-writing the fan speed: a fraction of
+    /// the fan's range, never smaller than one `step`.
+    public static func deadband(minSpeed: Double, maxSpeed: Double, fraction: Double, step: Int) -> Int {
+        max(step, Int((maxSpeed - minSpeed) * fraction))
+    }
+
+    /// Whether `newValue` differs from `lastApplied` by at least `deadband`
+    /// (always true when nothing has been applied yet).
+    public static func shouldApply(newValue: Int, lastApplied: Int?, deadband: Int) -> Bool {
+        guard let last = lastApplied else { return true }
+        return abs(newValue - last) >= deadband
     }
 }
