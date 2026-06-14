@@ -368,6 +368,11 @@
 "Fan" = "Quạt";
 "HID sensors" = "Cảm biến HID";
 "Synchronize fan's control" = "Đồng bộ điều khiển quạt";
+"Smart fan control" = "Điều khiển quạt thông minh";
+"Cooling profile" = "Hồ sơ làm mát";
+"Quiet" = "Yên tĩnh";
+"Balanced" = "Cân bằng";
+"Cooling" = "Làm mát";
 "Current" = "Dòng điện";
 "Energy" = "Năng lượng";
 "Show unknown sensors" = "Hiển thị các cảm biến không xác định";

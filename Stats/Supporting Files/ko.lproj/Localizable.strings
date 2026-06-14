@@ -368,6 +368,11 @@
 "Fan" = "팬";
 "HID sensors" = "HID 센서";
 "Synchronize fan's control" = "팬 제어 동기화";
+"Smart fan control" = "Smart fan control";
+"Cooling profile" = "Cooling profile";
+"Quiet" = "Quiet";
+"Balanced" = "Balanced";
+"Cooling" = "Cooling";
 "Current" = "전류";
 "Energy" = "에너지";
 "Show unknown sensors" = "알 수 없는 센서 표시";
