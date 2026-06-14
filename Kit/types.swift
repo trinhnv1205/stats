@@ -367,6 +367,28 @@ public let FanValues: [KeyValue_t] = [
     KeyValue_t(key: "percentage", value: "Percentage", additional: FanValue.percentage)
 ]
 
+// Smart fan control profiles. The tuple is the temperature window (in Celsius)
+// over which the fan ramps linearly from its minimum to its maximum speed:
+// at/below `min` the fan stays at the quiet floor, at/above `max` it runs full.
+public enum FanProfile: String {
+    case quiet
+    case balanced
+    case cooling
+
+    public var window: (min: Double, max: Double) {
+        switch self {
+        case .quiet:    return (65, 90)
+        case .balanced: return (50, 85)
+        case .cooling:  return (40, 75)
+        }
+    }
+}
+public let FanProfiles: [KeyValue_t] = [
+    KeyValue_t(key: "quiet", value: "Quiet", additional: FanProfile.quiet),
+    KeyValue_t(key: "balanced", value: "Balanced", additional: FanProfile.balanced),
+    KeyValue_t(key: "cooling", value: "Cooling", additional: FanProfile.cooling)
+]
+
 public var LineChartHistory: [KeyValue_p] = [
     KeyValue_t(key: "60", value: "1 minute"),
     KeyValue_t(key: "120", value: "2 minutes"),
