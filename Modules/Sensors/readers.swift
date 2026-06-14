@@ -97,11 +97,9 @@ internal class SensorsReader: Reader<Sensors_List> {
             }
         }
         
-        for sensor in list {
-            if let newValue = SMC.shared.getValue(sensor.key) {
-                if let idx = list.firstIndex(where: { $0.key == sensor.key }) {
-                    list[idx].value = newValue
-                }
+        for idx in list.indices {
+            if let newValue = SMC.shared.getValue(list[idx].key) {
+                list[idx].value = newValue
             }
         }
         
@@ -213,7 +211,7 @@ internal class SensorsReader: Reader<Sensors_List> {
                 }
             }
         }
-        if !fanSensors.isEmpty && fanSensors.count > 1 {
+        if fanSensors.count > 1 {
             if let f = fanSensors.max(by: { $0.value < $1.value }) as? Fan {
                 if let idx = self.list.sensors.firstIndex(where: { $0.key == "Fastest fan" }) {
                     if var fan = self.list.sensors[idx] as? Fan {
@@ -281,7 +279,7 @@ internal class SensorsReader: Reader<Sensors_List> {
                 list.append(Sensor(key: "Hottest GPU", name: "Hottest GPU", value: max, group: .GPU, type: .temperature, platforms: Platform.all, isComputed: true))
             }
         }
-        if !fanSensors.isEmpty && fanSensors.count > 1 {
+        if fanSensors.count > 1 {
             if let f = fanSensors.max(by: { $0.value < $1.value }) as? Fan {
                 list.append(Fan(id: -1, key: "Fastest fan", name: "Fastest fan", minSpeed: f.minSpeed, maxSpeed: f.maxSpeed, value: f.value, mode: .automatic, isComputed: true))
             }
