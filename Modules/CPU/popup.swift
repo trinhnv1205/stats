@@ -121,13 +121,9 @@ internal class Popup: PopupWrapper {
         (self.processHeight*CGFloat(self.numberOfProcesses)) + (self.numberOfProcesses == 0 ? 0 : Constants.Popup.separatorHeight + 22)
     }
     private var uptimeValue: String {
-        let form = DateComponentsFormatter()
-        form.maximumUnitCount = 2
-        form.unitsStyle = .full
-        form.allowedUnits = [.day, .hour, .minute]
         var value = localizedString("Unknown")
         if let bootDate = SystemKit.shared.device.bootDate {
-            if let duration = form.string(from: bootDate, to: Date()) {
+            if let duration = DateComponentsFormatter.durationDayHourMinute.string(from: bootDate, to: Date()) {
                 value = duration
             }
         }
@@ -260,7 +256,7 @@ internal class Popup: PopupWrapper {
                 box.heightAnchor.constraint(equalToConstant: box.frame.height).isActive = true
                 box.wantsLayer = true
                 box.layer?.backgroundColor = NSColor.lightGray.withAlphaComponent(0.1).cgColor
-                box.layer?.cornerRadius = 3
+                box.layer?.cornerRadius = Constants.Popup.innerRadius
                 
                 let chart = ColumnChartView(frame: NSRect(
                     x: Constants.Popup.spacing,

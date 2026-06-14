@@ -200,18 +200,31 @@ public class SMC {
         return IOServiceClose(conn)
     }
     
+    /// Fan mode/control keys legitimately report all-zero bytes (0 = automatic mode),
+    /// so they must not be treated as empty readings and discarded like other keys.
+    /// Matches `FS! ` and any per-fan mode key `F0Md`...`F9Md` / `F0md`...`F9md`.
+    private func acceptsZeroValue(_ key: String) -> Bool {
+        if key == "FS! " { return true }
+        let b = Array(key.utf8)
+        return b.count == 4
+            && b[0] == UInt8(ascii: "F")
+            && b[1] >= UInt8(ascii: "0") && b[1] <= UInt8(ascii: "9")
+            && (b[2] == UInt8(ascii: "M") || b[2] == UInt8(ascii: "m"))
+            && b[3] == UInt8(ascii: "d")
+    }
+
     public func getValue(_ key: String) -> Double? {
         var result: kern_return_t = 0
         var val: SMCVal_t = SMCVal_t(key)
-        
+
         result = read(&val)
         if result != kIOReturnSuccess {
             print("Error read(\(key)): " + (String(cString: mach_error_string(result), encoding: String.Encoding.ascii) ?? "unknown error"))
             return nil
         }
-        
+
         if val.dataSize > 0 {
-            if val.bytes.first(where: { $0 != 0 }) == nil && val.key != "FS! " && val.key != "F0Md" && val.key != "F1Md" && val.key != "F0md" && val.key != "F1md" {
+            if val.bytes.first(where: { $0 != 0 }) == nil && !self.acceptsZeroValue(val.key) {
                 return nil
             }
             
@@ -345,13 +358,10 @@ public class SMC {
     public func write(_ key: String, _ newValue: Int) -> kern_return_t {
         var value = SMCVal_t(key)
         value.dataSize = 2
-        value.bytes = [UInt8(newValue >> 6), UInt8((newValue << 2) ^ ((newValue >> 6) << 8)), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                       UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                       UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                       UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                       UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                       UInt8(0), UInt8(0)]
-        
+        value.bytes = Array(repeating: UInt8(0), count: 32)
+        value.bytes[0] = UInt8(newValue >> 6)
+        value.bytes[1] = UInt8((newValue << 2) ^ ((newValue >> 6) << 8))
+
         return write(value)
     }
     
@@ -417,13 +427,9 @@ public class SMC {
                 return
             }
             
-            value.bytes = [UInt8(mode.rawValue), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                                   UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                                   UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                                   UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                                   UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                                   UInt8(0), UInt8(0)]
-            
+            value.bytes = Array(repeating: UInt8(0), count: 32)
+            value.bytes[0] = UInt8(mode.rawValue)
+
             result = write(value)
             if result != kIOReturnSuccess {
                 print("Error write: " + (String(cString: mach_error_string(result), encoding: String.Encoding.ascii) ?? "unknown error"))
@@ -465,13 +471,9 @@ public class SMC {
             return
         }
         
-        value.bytes = [0, newMode, UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                       UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                       UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                       UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                       UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                       UInt8(0), UInt8(0)]
-        
+        value.bytes = Array(repeating: UInt8(0), count: 32)
+        value.bytes[1] = newMode
+
         result = write(value)
         if result != kIOReturnSuccess {
             print("Error write: " + (String(cString: mach_error_string(result), encoding: String.Encoding.ascii) ?? "unknown error"))
@@ -481,11 +483,11 @@ public class SMC {
     }
     
     public func setFanSpeed(_ id: Int, speed: Int) {
-        if let maxSpeed = self.getValue("F\(id)Mx"),
-           speed > Int(maxSpeed) {
-            return setFanSpeed(id, speed: Int(maxSpeed))
+        var speed = speed
+        if let maxSpeed = self.getValue("F\(id)Mx") {
+            speed = min(speed, Int(maxSpeed))
         }
-        
+
         #if arch(arm64)
         var modeVal = SMCVal_t(fanModeKey(id))
         let modeResult = read(&modeVal)
@@ -543,10 +545,9 @@ public class SMC {
     }
     
     private func writeWithRetry(_ value: SMCVal_t, maxAttempts: Int = 10, delayMicros: UInt32 = 50_000) -> Bool {
-        let mutableValue = value
         var lastResult: kern_return_t = kIOReturnSuccess
         for attempt in 0..<maxAttempts {
-            lastResult = write(mutableValue)
+            lastResult = write(value)
             if lastResult == kIOReturnSuccess {
                 return true
             }

@@ -20,6 +20,11 @@ public struct Popup_c_s {
     public let separatorHeight: CGFloat = 30
     public let portalHeight: CGFloat = 120
     public let radius: CGFloat = 6
+    // Corner radius for inner chips/boxes nested inside a container. Kept a bit
+    // tighter than `radius` and centralized here so it stays consistent.
+    public let innerRadius: CGFloat = 4
+    // Hairline border width for bordered controls (use with NSColor.separatorColor).
+    public let borderWidth: CGFloat = 1
 }
 
 public struct Settings_c_s {

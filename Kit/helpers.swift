@@ -16,6 +16,19 @@ import UserNotifications
 import WebKit
 import Metal
 
+public extension DateComponentsFormatter {
+    /// Shared formatter for "X days, Y hours" style durations shown in popups
+    /// (uptime, last-reset, last-charge). Building a DateComponentsFormatter is
+    /// costly, so reuse a single configured instance. Use on the main thread.
+    static let durationDayHourMinute: DateComponentsFormatter = {
+        let formatter = DateComponentsFormatter()
+        formatter.maximumUnitCount = 2
+        formatter.unitsStyle = .full
+        formatter.allowedUnits = [.day, .hour, .minute]
+        return formatter
+    }()
+}
+
 public struct LaunchAtLogin {
     private static let id = "\(Bundle.main.bundleIdentifier!).LaunchAtLogin"
     

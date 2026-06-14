@@ -368,6 +368,11 @@
 "Fan" = "Ventola";
 "HID sensors" = "Sensori HID";
 "Synchronize fan's control" = "Sincronizza ventole";
+"Smart fan control" = "Smart fan control";
+"Cooling profile" = "Cooling profile";
+"Quiet" = "Quiet";
+"Balanced" = "Balanced";
+"Cooling" = "Cooling";
 "Current" = "Corrente";
 "Energy" = "Energia";
 "Show unknown sensors" = "Mostra sensori sconosciuti";

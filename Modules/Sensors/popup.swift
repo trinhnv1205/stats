@@ -352,7 +352,7 @@ internal class ValueSensorView: NSStackView {
         self.orientation = .horizontal
         self.distribution = .fillProportionally
         self.spacing = 0
-        self.layer?.cornerRadius = 3
+        self.layer?.cornerRadius = Constants.Popup.innerRadius
         
         self.labelView.stringValue = sensor.name
         self.labelView.toolTip = sensor.key
@@ -414,7 +414,7 @@ internal class ChartSensorView: NSStackView {
         self.orientation = .horizontal
         self.distribution = .fillProportionally
         self.spacing = 0
-        self.layer?.cornerRadius = 3
+        self.layer?.cornerRadius = Constants.Popup.innerRadius
         
         self.chart = LineChartView(frame: NSRect(x: 0, y: 0, width: self.frame.width, height: self.frame.height), num: 120, scale: .linear)
         self.chart?.setSuffix(suffix)
@@ -473,6 +473,9 @@ internal class FanView: NSStackView {
     private var syncState: Bool {
         Store.shared.bool(key: "Sensors_fansSync", defaultValue: false)
     }
+    private var smartFanState: Bool {
+        Store.shared.bool(key: "Sensors_smartFan", defaultValue: false)
+    }
     private var speed: Double {
         get {
             if let v = self.fan.customSpeed, self.speedState {
@@ -522,8 +525,9 @@ internal class FanView: NSStackView {
         NotificationCenter.default.addObserver(self, selector: #selector(self.syncFanSpeed), name: .syncFansControl, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.changeHelperState), name: .fanHelperState, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.controlCallback), name: .toggleFanControl, object: nil)
-        
-        if let fanMode = self.fan.customMode, self.speedState && fanMode != FanMode.automatic {
+        NotificationCenter.default.addObserver(self, selector: #selector(self.smartFanCallback), name: .toggleSmartFan, object: nil)
+
+        if !self.smartFanState, let fanMode = self.fan.customMode, self.speedState && fanMode != FanMode.automatic {
             SMCHelper.shared.setFanMode(fan.id, mode: fanMode.rawValue)
             self.modeButtons?.setMode(FanMode(rawValue: fanMode.rawValue) ?? .automatic)
             
@@ -544,8 +548,9 @@ internal class FanView: NSStackView {
         NotificationCenter.default.removeObserver(self, name: .syncFansControl, object: nil)
         NotificationCenter.default.removeObserver(self, name: .fanHelperState, object: nil)
         NotificationCenter.default.removeObserver(self, name: .toggleFanControl, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .toggleSmartFan, object: nil)
     }
-    
+
     override func updateLayer() {
         self.layer?.backgroundColor = (isDarkMode ? NSColor(red: 17/255, green: 17/255, blue: 17/255, alpha: 0.25) : NSColor(red: 245/255, green: 245/255, blue: 245/255, alpha: 1)).cgColor
     }
@@ -592,9 +597,9 @@ internal class FanView: NSStackView {
         
         let container = NSStackView(frame: NSRect(x: 0, y: 4, width: view.frame.width, height: view.frame.height - 8))
         container.wantsLayer = true
-        container.layer?.cornerRadius = 3
-        container.layer?.borderWidth = 1
-        container.layer?.borderColor = NSColor.lightGray.cgColor
+        container.layer?.cornerRadius = Constants.Popup.innerRadius
+        container.layer?.borderWidth = Constants.Popup.borderWidth
+        container.layer?.borderColor = NSColor.separatorColor.cgColor
         container.orientation = .horizontal
         container.alignment = .centerY
         container.distribution = .fillProportionally
@@ -685,9 +690,9 @@ internal class FanView: NSStackView {
         minBtn.state = .off
         minBtn.action = #selector(self.setMin)
         minBtn.wantsLayer = true
-        minBtn.layer?.cornerRadius = 3
-        minBtn.layer?.borderWidth = 1
-        minBtn.layer?.borderColor = NSColor.lightGray.cgColor
+        minBtn.layer?.cornerRadius = Constants.Popup.innerRadius
+        minBtn.layer?.borderWidth = Constants.Popup.borderWidth
+        minBtn.layer?.borderColor = NSColor.separatorColor.cgColor
         
         let valueField: NSTextField = TextView(frame: NSRect(x: 80, y: 0, width: levels.frame.width - 160, height: levels.frame.height))
         valueField.font = NSFont.systemFont(ofSize: 11, weight: .light)
@@ -703,9 +708,9 @@ internal class FanView: NSStackView {
         maxBtn.state = .off
         maxBtn.wantsLayer = true
         maxBtn.action = #selector(self.setMax)
-        maxBtn.layer?.cornerRadius = 3
-        maxBtn.layer?.borderWidth = 1
-        maxBtn.layer?.borderColor = NSColor.lightGray.cgColor
+        maxBtn.layer?.cornerRadius = Constants.Popup.innerRadius
+        maxBtn.layer?.borderWidth = Constants.Popup.borderWidth
+        maxBtn.layer?.borderColor = NSColor.separatorColor.cgColor
         
         controls.addArrangedSubview(slider)
         
@@ -915,8 +920,11 @@ internal class FanView: NSStackView {
     
     private func setupControls(_ isInstalled: Bool? = nil) {
         let helperState = isInstalled ?? SMCHelper.shared.isInstalled
-        
-        if !self.controlState {
+
+        // While smart fan control is driving the fans, hide the manual controls so
+        // the user does not fight the automatic loop. The install prompt is still
+        // shown when the helper is missing, since smart control needs it too.
+        if !self.controlState || (helperState && self.smartFanState) {
             self.helperView?.removeFromSuperview()
             self.controlView?.removeFromSuperview()
             self.buttonsView?.removeFromSuperview()
@@ -953,6 +961,10 @@ internal class FanView: NSStackView {
         self.controlState = state
         self.setupControls()
     }
+
+    @objc private func smartFanCallback(_ notification: Notification) {
+        self.setupControls()
+    }
 }
 
 private class ModeButtons: NSStackView {
@@ -983,9 +995,9 @@ private class ModeButtons: NSStackView {
         self.distribution = .fillProportionally
         self.spacing = 0
         self.wantsLayer = true
-        self.layer?.cornerRadius = 3
-        self.layer?.borderWidth = 1
-        self.layer?.borderColor = NSColor.lightGray.cgColor
+        self.layer?.cornerRadius = Constants.Popup.innerRadius
+        self.layer?.borderWidth = Constants.Popup.borderWidth
+        self.layer?.borderColor = NSColor.separatorColor.cgColor
         
         let modes: NSStackView = NSStackView(frame: NSRect(x: 0, y: 0, width: self.frame.width, height: self.frame.height))
         modes.orientation = .horizontal

@@ -58,13 +58,29 @@ public struct Clock_t: Codable {
         set { Store.shared.set(key: "clock_\(self.id)_popupState", value: newValue) }
     }
     
+    // Building a DateFormatter is expensive, and formatted() is called for every
+    // clock on every reader tick (plus from the popup). Cache formatters by their
+    // configuration so we don't allocate one per call. DateFormatter.string(from:)
+    // is thread-safe on modern macOS; only creation/config needs the lock.
+    private static var formatterCache: [String: DateFormatter] = [:]
+    private static let formatterCacheLock = NSLock()
+
     public func formatted() -> String {
-        let formatter = DateFormatter()
-        var calendar = Clock.calendar(from: self.calendar)
-        calendar.timeZone = TimeZone(from: self.tz)
-        formatter.calendar = calendar
-        formatter.dateFormat = self.format
-        formatter.timeZone = TimeZone(from: self.tz)
+        let key = "\(self.format)|\(self.tz)|\(self.calendar)"
+        Clock_t.formatterCacheLock.lock()
+        let formatter: DateFormatter
+        if let cached = Clock_t.formatterCache[key] {
+            formatter = cached
+        } else {
+            formatter = DateFormatter()
+            var calendar = Clock.calendar(from: self.calendar)
+            calendar.timeZone = TimeZone(from: self.tz)
+            formatter.calendar = calendar
+            formatter.dateFormat = self.format
+            formatter.timeZone = TimeZone(from: self.tz)
+            Clock_t.formatterCache[key] = formatter
+        }
+        Clock_t.formatterCacheLock.unlock()
         return formatter.string(from: self.value ?? Date())
     }
 }

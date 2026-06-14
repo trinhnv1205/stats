@@ -293,6 +293,7 @@ public extension Notification.Name {
     static let moduleRearrange = Notification.Name("moduleRearrange")
     static let pause = Notification.Name("pause")
     static let toggleFanControl = Notification.Name("toggleFanControl")
+    static let toggleSmartFan = Notification.Name("toggleSmartFan")
     static let combinedModulesPopup = Notification.Name("combinedModulesPopup")
     static let remoteLoginSuccess = Notification.Name("remoteLoginSuccess")
     static let remoteState = Notification.Name("remoteState")
@@ -365,6 +366,28 @@ public enum FanValue: String {
 public let FanValues: [KeyValue_t] = [
     KeyValue_t(key: "rpm", value: "RPM", additional: FanValue.rpm),
     KeyValue_t(key: "percentage", value: "Percentage", additional: FanValue.percentage)
+]
+
+// Smart fan control profiles. The tuple is the temperature window (in Celsius)
+// over which the fan ramps linearly from its minimum to its maximum speed:
+// at/below `min` the fan stays at the quiet floor, at/above `max` it runs full.
+public enum FanProfile: String {
+    case quiet
+    case balanced
+    case cooling
+
+    public var window: (min: Double, max: Double) {
+        switch self {
+        case .quiet:    return (65, 90)
+        case .balanced: return (50, 85)
+        case .cooling:  return (40, 75)
+        }
+    }
+}
+public let FanProfiles: [KeyValue_t] = [
+    KeyValue_t(key: "quiet", value: "Quiet", additional: FanProfile.quiet),
+    KeyValue_t(key: "balanced", value: "Balanced", additional: FanProfile.balanced),
+    KeyValue_t(key: "cooling", value: "Cooling", additional: FanProfile.cooling)
 ]
 
 public var LineChartHistory: [KeyValue_p] = [

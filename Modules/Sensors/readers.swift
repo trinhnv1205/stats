@@ -97,11 +97,9 @@ internal class SensorsReader: Reader<Sensors_List> {
             }
         }
         
-        for sensor in list {
-            if let newValue = SMC.shared.getValue(sensor.key) {
-                if let idx = list.firstIndex(where: { $0.key == sensor.key }) {
-                    list[idx].value = newValue
-                }
+        for idx in list.indices {
+            if let newValue = SMC.shared.getValue(list[idx].key) {
+                list[idx].value = newValue
             }
         }
         
@@ -213,7 +211,7 @@ internal class SensorsReader: Reader<Sensors_List> {
                 }
             }
         }
-        if !fanSensors.isEmpty && fanSensors.count > 1 {
+        if fanSensors.count > 1 {
             if let f = fanSensors.max(by: { $0.value < $1.value }) as? Fan {
                 if let idx = self.list.sensors.firstIndex(where: { $0.key == "Fastest fan" }) {
                     if var fan = self.list.sensors[idx] as? Fan {
@@ -281,7 +279,7 @@ internal class SensorsReader: Reader<Sensors_List> {
                 list.append(Sensor(key: "Hottest GPU", name: "Hottest GPU", value: max, group: .GPU, type: .temperature, platforms: Platform.all, isComputed: true))
             }
         }
-        if !fanSensors.isEmpty && fanSensors.count > 1 {
+        if fanSensors.count > 1 {
             if let f = fanSensors.max(by: { $0.value < $1.value }) as? Fan {
                 list.append(Fan(id: -1, key: "Fastest fan", name: "Fastest fan", minSpeed: f.minSpeed, maxSpeed: f.maxSpeed, value: f.value, mode: .automatic, isComputed: true))
             }
@@ -588,5 +586,132 @@ extension SensorsReader {
             Self.appleSiliconPower(currentEnergy: self.powers.RAM, previousEnergy: prevRAM, elapsed: elapsed),
             Self.appleSiliconPower(currentEnergy: self.powers.PCI, previousEnergy: prevPCI, elapsed: elapsed)
         )
+    }
+}
+
+// MARK: - Smart fan control
+
+/// Drives the fans automatically from the live temperatures so the Mac stays cool
+/// while keeping the fans as quiet as possible. Enabled globally through the
+/// `Sensors_smartFan` setting; the aggressiveness comes from `Sensors_smartFanProfile`.
+///
+/// The target speed is a linear interpolation between each fan's minimum and maximum
+/// speed across the profile's temperature window. An exponential moving average
+/// smooths the target and a deadband suppresses tiny adjustments, so the fan does not
+/// constantly change pitch — which is the part that is actually audible/annoying.
+internal final class FanController: NSObject {
+    static let shared = FanController()
+
+    private let queue = DispatchQueue(label: "eu.exelban.Stats.Sensors.FanController")
+
+    private var smoothed: [Int: Double] = [:]    // fan id -> smoothed target RPM
+    private var lastApplied: [Int: Int] = [:]    // fan id -> last RPM written to the SMC
+    private var managed: Set<Int> = []           // fans currently forced by us
+
+    private let alpha: Double = 0.35             // EMA factor (higher reacts faster)
+    private let deadbandFraction: Double = 0.04  // ignore changes below 4% of the fan range
+    private let step: Int = 50                   // round the target RPM to this granularity
+
+    private var installedCache: (value: Bool, at: Date)?
+
+    private override init() {
+        super.init()
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self, selector: #selector(self.willSleep), name: NSWorkspace.willSleepNotification, object: nil
+        )
+    }
+
+    deinit {
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
+    }
+
+    private var enabled: Bool {
+        Store.shared.bool(key: "Sensors_smartFan", defaultValue: false)
+    }
+    private var profile: FanProfile {
+        FanProfile(rawValue: Store.shared.string(key: "Sensors_smartFanProfile", defaultValue: FanProfile.cooling.rawValue)) ?? .cooling
+    }
+
+    /// Feed the latest sensor snapshot; call once per reader cycle.
+    public func update(_ sensors: [Sensor_p]) {
+        self.queue.async { [weak self] in
+            self?.process(sensors)
+        }
+    }
+
+    /// Hand the fans back to the system (automatic mode) and forget our state.
+    public func reset() {
+        self.queue.async { [weak self] in
+            self?.restore()
+        }
+    }
+
+    private func process(_ sensors: [Sensor_p]) {
+        guard self.enabled else {
+            if !self.managed.isEmpty { self.restore() }
+            return
+        }
+        guard self.helperInstalled() else { return }
+
+        let fans = sensors.compactMap { $0 as? Fan }.filter { !$0.isComputed && $0.id >= 0 && $0.maxSpeed > $0.minSpeed }
+        guard !fans.isEmpty, let temp = self.referenceTemperature(sensors) else { return }
+
+        let window = self.profile.window
+        let ratio = max(0, min(1, (temp - window.min) / (window.max - window.min)))
+
+        for fan in fans {
+            if !self.managed.contains(fan.id) {
+                SMCHelper.shared.setFanMode(fan.id, mode: FanMode.forced.rawValue)
+                self.managed.insert(fan.id)
+                self.smoothed[fan.id] = fan.value
+            }
+
+            let target = fan.minSpeed + ratio * (fan.maxSpeed - fan.minSpeed)
+            let previous = self.smoothed[fan.id] ?? fan.value
+            let smoothedValue = previous + self.alpha * (target - previous)
+            self.smoothed[fan.id] = smoothedValue
+
+            let rounded = Int((smoothedValue / Double(self.step)).rounded()) * self.step
+            let deadband = max(self.step, Int((fan.maxSpeed - fan.minSpeed) * self.deadbandFraction))
+            if let last = self.lastApplied[fan.id], abs(rounded - last) < deadband {
+                continue
+            }
+            self.lastApplied[fan.id] = rounded
+            SMCHelper.shared.setFanSpeed(fan.id, speed: rounded)
+        }
+    }
+
+    private func restore() {
+        for id in self.managed {
+            SMCHelper.shared.setFanMode(id, mode: FanMode.automatic.rawValue)
+        }
+        self.managed.removeAll()
+        self.smoothed.removeAll()
+        self.lastApplied.removeAll()
+    }
+
+    /// The hottest valid CPU/GPU temperature drives the cooling.
+    private func referenceTemperature(_ sensors: [Sensor_p]) -> Double? {
+        var hottest: Double?
+        for s in sensors where s.type == .temperature && (s.group == .CPU || s.group == .GPU) {
+            guard s.value > 0, s.value < 110 else { continue }
+            if hottest == nil || s.value > hottest! {
+                hottest = s.value
+            }
+        }
+        return hottest
+    }
+
+    private func helperInstalled() -> Bool {
+        if let cache = self.installedCache, Date().timeIntervalSince(cache.at) < 60 {
+            return cache.value
+        }
+        let value = SMCHelper.shared.isInstalled
+        self.installedCache = (value, Date())
+        return value
+    }
+
+    @objc private func willSleep() {
+        self.reset()
     }
 }

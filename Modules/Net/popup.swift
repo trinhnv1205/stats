@@ -232,7 +232,7 @@ internal class Popup: PopupWrapper {
         let container: NSView = NSView(frame: NSRect(x: 0, y: 0, width: self.frame.width, height: separator.frame.origin.y))
         container.wantsLayer = true
         container.layer?.backgroundColor = NSColor.lightGray.withAlphaComponent(0.1).cgColor
-        container.layer?.cornerRadius = 3
+        container.layer?.cornerRadius = Constants.Popup.innerRadius
         
         let chart = GridChartView(frame: NSRect(x: 0, y: 1, width: container.frame.width, height: container.frame.height - 2), grid: (30, 3))
         container.addSubview(chart)
@@ -444,12 +444,7 @@ internal class Popup: PopupWrapper {
         self.totalUploadField?.stringValue = Units(bytes: value.total.upload).getReadableMemory()
         self.totalDownloadField?.stringValue = Units(bytes: value.total.download).getReadableMemory()
         
-        let form = DateComponentsFormatter()
-        form.maximumUnitCount = 2
-        form.unitsStyle = .full
-        form.allowedUnits = [.day, .hour, .minute]
-        
-        if let duration = form.string(from: self.lastReset, to: Date()) {
+        if let duration = DateComponentsFormatter.durationDayHourMinute.string(from: self.lastReset, to: Date()) {
             self.totalUploadLabel?.toolTip = localizedString("Last reset", duration)
             self.totalDownloadLabel?.toolTip = localizedString("Last reset", duration)
         }

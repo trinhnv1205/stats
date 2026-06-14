@@ -88,8 +88,16 @@ public class Sensors: Module {
     }
     
     public override func willTerminate() {
+        // Smart fan control forces the fans without setting a per-fan customMode,
+        // so restore every fan to automatic here before the app exits.
+        if Store.shared.bool(key: "Sensors_smartFan", defaultValue: false), let count = SMC.shared.getValue("FNum") {
+            for i in 0..<Int(count) {
+                SMCHelper.shared.setFanMode(i, mode: FanMode.automatic.rawValue)
+            }
+        }
+
         guard SMCHelper.shared.isActive(), let reader = self.sensorsReader else { return }
-        
+
         reader.list.sensors.filter({ $0 is Fan }).forEach { (s: Sensor_p) in
             if let f = s as? Fan, let mode = f.customMode {
                 if !mode.isAutomatic {
@@ -105,7 +113,8 @@ public class Sensors: Module {
         self.popupView.usageCallback(value.sensors)
         self.portalView.usageCallback(value.sensors)
         self.notificationsView.usageCallback(value.sensors)
-        
+        FanController.shared.update(value.sensors)
+
         let activeWidgets = self.menuBar.widgets.filter{ $0.isActive }
         self.sensorsReader?.sleepMode(state: activeWidgets.contains(where: {$0.item is Label}) && activeWidgets.count == 1)
         

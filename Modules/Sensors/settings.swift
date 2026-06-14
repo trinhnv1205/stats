@@ -19,6 +19,8 @@ internal class Settings: NSStackView, Settings_v {
     private var fansSyncState: Bool = false
     private var unknownSensorsState: Bool = false
     private var fanValueState: FanValue = .percentage
+    private var smartFanState: Bool = false
+    private var fanProfileState: FanProfile = .cooling
     
     public var callback: (() -> Void) = {}
     public var HIDcallback: (() -> Void) = {}
@@ -45,6 +47,8 @@ internal class Settings: NSStackView, Settings_v {
         self.fansSyncState = Store.shared.bool(key: "\(self.title)_fansSync", defaultValue: self.fansSyncState)
         self.unknownSensorsState = Store.shared.bool(key: "\(self.title)_unknown", defaultValue: self.unknownSensorsState)
         self.fanValueState = FanValue(rawValue: Store.shared.string(key: "\(self.title)_fanValue", defaultValue: self.fanValueState.rawValue)) ?? .percentage
+        self.smartFanState = Store.shared.bool(key: "\(self.title)_smartFan", defaultValue: self.smartFanState)
+        self.fanProfileState = FanProfile(rawValue: Store.shared.string(key: "\(self.title)_smartFanProfile", defaultValue: self.fanProfileState.rawValue)) ?? .cooling
         self.selectedSensor = Store.shared.string(key: "\(self.title)_sensor", defaultValue: self.selectedSensor)
         
         self.addArrangedSubview(PreferencesSection([
@@ -68,6 +72,15 @@ internal class Settings: NSStackView, Settings_v {
             PreferencesRow(localizedString("Synchronize fan's control"), component: switchView(
                 action: #selector(self.toggleFansSync),
                 state: self.fansSyncState
+            )),
+            PreferencesRow(localizedString("Smart fan control"), component: switchView(
+                action: #selector(self.toggleSmartFan),
+                state: self.smartFanState
+            )),
+            PreferencesRow(localizedString("Cooling profile"), component: selectView(
+                action: #selector(self.changeFanProfile),
+                items: FanProfiles,
+                selected: self.fanProfileState.rawValue
             ))
         ]))
         
@@ -198,6 +211,16 @@ internal class Settings: NSStackView, Settings_v {
             Store.shared.set(key: "\(self.title)_fanValue", value: self.fanValueState.rawValue)
             self.callback()
         }
+    }
+    @objc private func toggleSmartFan(_ sender: NSControl) {
+        self.smartFanState = controlState(sender)
+        Store.shared.set(key: "\(self.title)_smartFan", value: self.smartFanState)
+        NotificationCenter.default.post(name: .toggleSmartFan, object: nil, userInfo: ["state": self.smartFanState])
+    }
+    @objc private func changeFanProfile(_ sender: NSMenuItem) {
+        guard let key = sender.representedObject as? String, let value = FanProfile(rawValue: key) else { return }
+        self.fanProfileState = value
+        Store.shared.set(key: "\(self.title)_smartFanProfile", value: self.fanProfileState.rawValue)
     }
     @objc private func handleSelection(_ sender: NSPopUpButton) {
         guard let item = sender.selectedItem, let id = item.representedObject as? String else { return }

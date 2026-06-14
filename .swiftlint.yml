@@ -35,6 +35,7 @@ identifier_name:
     - _uuidAddress
     - AppleSiliconSensorsList
     - FanValues
+    - FanProfiles
     - CombinedModulesSpacings
     - BatteryInfo
     - PublicIPAddressRefreshIntervals
