@@ -368,11 +368,11 @@
 "Fan" = "فن";
 "HID sensors" = "سنسور‌های HID";
 "Synchronize fan's control" = "همگام‌سازی سرعت فن‌ها";
-"Smart fan control" = "Smart fan control";
-"Cooling profile" = "Cooling profile";
-"Quiet" = "Quiet";
-"Balanced" = "Balanced";
-"Cooling" = "Cooling";
+"Smart fan control" = "کنترل هوشمند فن";
+"Cooling profile" = "نمایه خنک‌سازی";
+"Quiet" = "آرام";
+"Balanced" = "متعادل";
+"Cooling" = "خنک‌سازی";
 "Current" = "جریان";
 "Energy" = "انرژی";
 "Show unknown sensors" = "نمایش سنسور‌های ناشناخته";

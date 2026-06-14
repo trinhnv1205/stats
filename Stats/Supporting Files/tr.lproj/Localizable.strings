@@ -368,11 +368,11 @@
 "Fan" = "Fan";
 "HID sensors" = "HID sensörleri";
 "Synchronize fan's control" = "Fanın kontrolünü senkronize et";
-"Smart fan control" = "Smart fan control";
-"Cooling profile" = "Cooling profile";
-"Quiet" = "Quiet";
-"Balanced" = "Balanced";
-"Cooling" = "Cooling";
+"Smart fan control" = "Akıllı fan denetimi";
+"Cooling profile" = "Soğutma profili";
+"Quiet" = "Sessiz";
+"Balanced" = "Dengeli";
+"Cooling" = "Soğutma";
 "Current" = "Akım";
 "Energy" = "Enerji";
 "Show unknown sensors" = "Bilinmeyen sensörleri göster";

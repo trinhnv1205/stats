@@ -368,11 +368,11 @@
 "Fan" = "Ventilator";
 "HID sensors" = "HID senzorji";
 "Synchronize fan's control" = "Sinhroniziraj krmiljenje ventilatorja";
-"Smart fan control" = "Smart fan control";
-"Cooling profile" = "Cooling profile";
-"Quiet" = "Quiet";
-"Balanced" = "Balanced";
-"Cooling" = "Cooling";
+"Smart fan control" = "Pametno upravljanje ventilatorja";
+"Cooling profile" = "Profil hlajenja";
+"Quiet" = "Tiho";
+"Balanced" = "Uravnoteženo";
+"Cooling" = "Hlajenje";
 "Current" = "Tok";
 "Energy" = "Energija";
 "Show unknown sensors" = "Prikaži neznane senzorje";
