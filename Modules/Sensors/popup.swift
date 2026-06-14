@@ -527,7 +527,7 @@ internal class FanView: NSStackView {
         NotificationCenter.default.addObserver(self, selector: #selector(self.controlCallback), name: .toggleFanControl, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.smartFanCallback), name: .toggleSmartFan, object: nil)
 
-        if let fanMode = self.fan.customMode, self.speedState && fanMode != FanMode.automatic {
+        if !self.smartFanState, let fanMode = self.fan.customMode, self.speedState && fanMode != FanMode.automatic {
             SMCHelper.shared.setFanMode(fan.id, mode: fanMode.rawValue)
             self.modeButtons?.setMode(FanMode(rawValue: fanMode.rawValue) ?? .automatic)
             
