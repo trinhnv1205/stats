@@ -43,7 +43,7 @@ open class Reader<T: Codable>: NSObject, ReaderInternal_p {
     public var log: NextLog {
         NextLog.shared.copy(category: "\(String(describing: self))")
     }
-    private let valueQueue = DispatchQueue(label: "eu.exelban.readerActiveQueue")
+    private let valueQueue = DispatchQueue(label: "eu.exelban.readerValueQueue")
     private var _value: T?
     public var value: T? {
         get { self.valueQueue.sync { self._value } }
