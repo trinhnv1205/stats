@@ -599,7 +599,7 @@ internal class FanView: NSStackView {
         container.wantsLayer = true
         container.layer?.cornerRadius = 3
         container.layer?.borderWidth = 1
-        container.layer?.borderColor = NSColor.lightGray.cgColor
+        container.layer?.borderColor = NSColor.separatorColor.cgColor
         container.orientation = .horizontal
         container.alignment = .centerY
         container.distribution = .fillProportionally
@@ -692,7 +692,7 @@ internal class FanView: NSStackView {
         minBtn.wantsLayer = true
         minBtn.layer?.cornerRadius = 3
         minBtn.layer?.borderWidth = 1
-        minBtn.layer?.borderColor = NSColor.lightGray.cgColor
+        minBtn.layer?.borderColor = NSColor.separatorColor.cgColor
         
         let valueField: NSTextField = TextView(frame: NSRect(x: 80, y: 0, width: levels.frame.width - 160, height: levels.frame.height))
         valueField.font = NSFont.systemFont(ofSize: 11, weight: .light)
@@ -710,7 +710,7 @@ internal class FanView: NSStackView {
         maxBtn.action = #selector(self.setMax)
         maxBtn.layer?.cornerRadius = 3
         maxBtn.layer?.borderWidth = 1
-        maxBtn.layer?.borderColor = NSColor.lightGray.cgColor
+        maxBtn.layer?.borderColor = NSColor.separatorColor.cgColor
         
         controls.addArrangedSubview(slider)
         
@@ -997,7 +997,7 @@ private class ModeButtons: NSStackView {
         self.wantsLayer = true
         self.layer?.cornerRadius = 3
         self.layer?.borderWidth = 1
-        self.layer?.borderColor = NSColor.lightGray.cgColor
+        self.layer?.borderColor = NSColor.separatorColor.cgColor
         
         let modes: NSStackView = NSStackView(frame: NSRect(x: 0, y: 0, width: self.frame.width, height: self.frame.height))
         modes.orientation = .horizontal
