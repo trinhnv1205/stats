@@ -256,7 +256,7 @@ internal class Popup: PopupWrapper {
                 box.heightAnchor.constraint(equalToConstant: box.frame.height).isActive = true
                 box.wantsLayer = true
                 box.layer?.backgroundColor = NSColor.lightGray.withAlphaComponent(0.1).cgColor
-                box.layer?.cornerRadius = 3
+                box.layer?.cornerRadius = Constants.Popup.innerRadius
                 
                 let chart = ColumnChartView(frame: NSRect(
                     x: Constants.Popup.spacing,

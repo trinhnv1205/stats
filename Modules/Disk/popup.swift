@@ -514,8 +514,8 @@ internal class ChartView: NSStackView {
         super.init(frame: NSRect(x: 0, y: 0, width: width, height: 36))
         
         self.wantsLayer = true
-        self.layer?.cornerRadius = 3
-        
+        self.layer?.cornerRadius = Constants.Popup.innerRadius
+
         let chart = NetworkChartView(frame: NSRect(
             x: 0,
             y: 1,

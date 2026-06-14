@@ -232,7 +232,7 @@ internal class Popup: PopupWrapper {
         let container: NSView = NSView(frame: NSRect(x: 0, y: 0, width: self.frame.width, height: separator.frame.origin.y))
         container.wantsLayer = true
         container.layer?.backgroundColor = NSColor.lightGray.withAlphaComponent(0.1).cgColor
-        container.layer?.cornerRadius = 3
+        container.layer?.cornerRadius = Constants.Popup.innerRadius
         
         let chart = GridChartView(frame: NSRect(x: 0, y: 1, width: container.frame.width, height: container.frame.height - 2), grid: (30, 3))
         container.addSubview(chart)

@@ -352,7 +352,7 @@ internal class ValueSensorView: NSStackView {
         self.orientation = .horizontal
         self.distribution = .fillProportionally
         self.spacing = 0
-        self.layer?.cornerRadius = 3
+        self.layer?.cornerRadius = Constants.Popup.innerRadius
         
         self.labelView.stringValue = sensor.name
         self.labelView.toolTip = sensor.key
@@ -414,7 +414,7 @@ internal class ChartSensorView: NSStackView {
         self.orientation = .horizontal
         self.distribution = .fillProportionally
         self.spacing = 0
-        self.layer?.cornerRadius = 3
+        self.layer?.cornerRadius = Constants.Popup.innerRadius
         
         self.chart = LineChartView(frame: NSRect(x: 0, y: 0, width: self.frame.width, height: self.frame.height), num: 120, scale: .linear)
         self.chart?.setSuffix(suffix)
@@ -597,8 +597,8 @@ internal class FanView: NSStackView {
         
         let container = NSStackView(frame: NSRect(x: 0, y: 4, width: view.frame.width, height: view.frame.height - 8))
         container.wantsLayer = true
-        container.layer?.cornerRadius = 3
-        container.layer?.borderWidth = 1
+        container.layer?.cornerRadius = Constants.Popup.innerRadius
+        container.layer?.borderWidth = Constants.Popup.borderWidth
         container.layer?.borderColor = NSColor.separatorColor.cgColor
         container.orientation = .horizontal
         container.alignment = .centerY
@@ -690,8 +690,8 @@ internal class FanView: NSStackView {
         minBtn.state = .off
         minBtn.action = #selector(self.setMin)
         minBtn.wantsLayer = true
-        minBtn.layer?.cornerRadius = 3
-        minBtn.layer?.borderWidth = 1
+        minBtn.layer?.cornerRadius = Constants.Popup.innerRadius
+        minBtn.layer?.borderWidth = Constants.Popup.borderWidth
         minBtn.layer?.borderColor = NSColor.separatorColor.cgColor
         
         let valueField: NSTextField = TextView(frame: NSRect(x: 80, y: 0, width: levels.frame.width - 160, height: levels.frame.height))
@@ -708,8 +708,8 @@ internal class FanView: NSStackView {
         maxBtn.state = .off
         maxBtn.wantsLayer = true
         maxBtn.action = #selector(self.setMax)
-        maxBtn.layer?.cornerRadius = 3
-        maxBtn.layer?.borderWidth = 1
+        maxBtn.layer?.cornerRadius = Constants.Popup.innerRadius
+        maxBtn.layer?.borderWidth = Constants.Popup.borderWidth
         maxBtn.layer?.borderColor = NSColor.separatorColor.cgColor
         
         controls.addArrangedSubview(slider)
@@ -995,8 +995,8 @@ private class ModeButtons: NSStackView {
         self.distribution = .fillProportionally
         self.spacing = 0
         self.wantsLayer = true
-        self.layer?.cornerRadius = 3
-        self.layer?.borderWidth = 1
+        self.layer?.cornerRadius = Constants.Popup.innerRadius
+        self.layer?.borderWidth = Constants.Popup.borderWidth
         self.layer?.borderColor = NSColor.separatorColor.cgColor
         
         let modes: NSStackView = NSStackView(frame: NSRect(x: 0, y: 0, width: self.frame.width, height: self.frame.height))
