@@ -105,7 +105,10 @@ extension String: @retroactive LocalizedError {
     }
     
     public func matches(_ regex: String) -> Bool {
-        return self.range(of: regex, options: .regularExpression, range: nil, locale: nil) != nil
+        guard let re = RegexCache.shared.regex(regex) else {
+            return self.range(of: regex, options: .regularExpression, range: nil, locale: nil) != nil
+        }
+        return re.firstMatch(in: self, options: [], range: NSRange(self.startIndex..., in: self)) != nil
     }
     
     public func removedRegexMatches(pattern: String, replaceWith: String = "") -> String {
